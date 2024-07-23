@@ -1,7 +1,7 @@
 package handler
 
 import (
-	r "github.com/abyan.dev/auth/pkg/response"
+	r "github.com/abyan-dev/auth/pkg/response"
 	"github.com/gofiber/fiber/v2"
 )
 

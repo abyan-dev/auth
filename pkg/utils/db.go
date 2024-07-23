@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,10 +18,6 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, err
-	}
-
 	port, err := strconv.Atoi(os.Getenv("POSTGRES_PORT"))
 	if err != nil {
 		return nil, err

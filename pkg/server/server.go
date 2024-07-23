@@ -5,10 +5,10 @@ import (
 	"log"
 	"log/slog"
 
-	"github.com/abyan.dev/auth/pkg/handler"
-	"github.com/abyan.dev/auth/pkg/middleware"
-	"github.com/abyan.dev/auth/pkg/model"
-	"github.com/abyan.dev/auth/pkg/utils"
+	"github.com/abyan-dev/auth/pkg/handler"
+	"github.com/abyan-dev/auth/pkg/middleware"
+	"github.com/abyan-dev/auth/pkg/model"
+	"github.com/abyan-dev/auth/pkg/utils"
 	"github.com/goccy/go-json"
 	"github.com/joho/godotenv"
 

@@ -8,9 +8,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/abyan.dev/auth/pkg/model"
-	"github.com/abyan.dev/auth/pkg/response"
-	"github.com/abyan.dev/auth/pkg/utils"
+	"github.com/abyan-dev/auth/pkg/model"
+	"github.com/abyan-dev/auth/pkg/response"
+	"github.com/abyan-dev/auth/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"gopkg.in/gomail.v2"

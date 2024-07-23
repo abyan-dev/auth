@@ -2,14 +2,48 @@ name: tests
 
 on:
   push:
-    branches: [ "main", "staging" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "staging" ]
+    branches: [ "main" ]
 
 jobs:
 
-  build:
+  ci:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      mailhog:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    env:
+      FRONTEND_URL: http://localhost:3000
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      JWT_SECRET: secret
+      SENDER_EMAIL: no-reply@abyan.dev
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+
     steps:
     - uses: actions/checkout@v4
 
