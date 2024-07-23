@@ -34,6 +34,15 @@ type AuthResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type UserResponse struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Verified  bool      `json:"verified"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 func Register(c *fiber.Ctx) error {
 	config, err := utils.LoadMailEnv()
 	if err != nil {
@@ -134,7 +143,15 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to send confirmation email to user.")
 	}
 
-	return response.Ok(c, "Successfully sent a confirmation email to user.")
+	u := UserResponse{
+		Name:      user.Name,
+		Email:     requestPayload.Email,
+		Role:      "user",
+		Verified:  false,
+		CreatedAt: time.Now(),
+	}
+
+	return response.Ok(c, "Successfully sent a verification email to user.", u)
 }
 
 func Verify(c *fiber.Ctx) error {
