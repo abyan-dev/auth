@@ -3,7 +3,7 @@ package middleware
 import (
 	"os"
 
-	"github.com/abyan.dev/auth/pkg/response"
+	"github.com/abyan-dev/auth/pkg/response"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 )

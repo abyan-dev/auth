@@ -2,7 +2,8 @@ run:
 	go run ./cmd/api
 
 test:
-	go test -coverprofile=reports/coverage.out ./...
+	chmod +x scripts/run-tests.sh
+	./scripts/run-tests.sh
 
 cov: test
 	go tool cover -html=reports/coverage.out -o reports/coverage.html

@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>api: Go Coverage Report</title>
+		<title>utils: Go Coverage Report</title>
 		<style>
 			body {
 				background: black;
@@ -55,27 +55,15 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/abyan.dev/auth/cmd/api/main.go (0.0%)</option>
+				<option value="file0">github.com/abyan-dev/auth/pkg/utils/db.go (85.7%)</option>
 				
-				<option value="file1">github.com/abyan.dev/auth/pkg/handler/auth.go (0.0%)</option>
+				<option value="file1">github.com/abyan-dev/auth/pkg/utils/hash.go (100.0%)</option>
 				
-				<option value="file2">github.com/abyan.dev/auth/pkg/handler/health.go (0.0%)</option>
+				<option value="file2">github.com/abyan-dev/auth/pkg/utils/jwt.go (78.9%)</option>
 				
-				<option value="file3">github.com/abyan.dev/auth/pkg/middleware/jwt.go (0.0%)</option>
+				<option value="file3">github.com/abyan-dev/auth/pkg/utils/mail.go (100.0%)</option>
 				
-				<option value="file4">github.com/abyan.dev/auth/pkg/response/response.go (0.0%)</option>
-				
-				<option value="file5">github.com/abyan.dev/auth/pkg/server/server.go (0.0%)</option>
-				
-				<option value="file6">github.com/abyan.dev/auth/pkg/utils/db.go (0.0%)</option>
-				
-				<option value="file7">github.com/abyan.dev/auth/pkg/utils/hash.go (0.0%)</option>
-				
-				<option value="file8">github.com/abyan.dev/auth/pkg/utils/jwt.go (0.0%)</option>
-				
-				<option value="file9">github.com/abyan.dev/auth/pkg/utils/mail.go (0.0%)</option>
-				
-				<option value="file10">github.com/abyan.dev/auth/pkg/utils/validate.go (0.0%)</option>
+				<option value="file4">github.com/abyan-dev/auth/pkg/utils/validate.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -89,448 +77,13 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">package main
-
-import "github.com/abyan.dev/auth/pkg/server"
-
-func main() <span class="cov0" title="0">{
-        app := server.New()
-        server.Run(app)
-}</span>
-</pre>
-		
-		<pre class="file" id="file1" style="display: none">package handler
+		<pre class="file" id="file0" style="display: none">package utils
 
 import (
         "fmt"
         "os"
         "strconv"
-        "strings"
-        "text/template"
-        "time"
 
-        "github.com/abyan.dev/auth/pkg/model"
-        "github.com/abyan.dev/auth/pkg/response"
-        "github.com/abyan.dev/auth/pkg/utils"
-        "github.com/gofiber/fiber/v2"
-        "github.com/golang-jwt/jwt/v5"
-        "gopkg.in/gomail.v2"
-        "gorm.io/gorm"
-)
-
-type RequestRegistrationPayload struct {
-        Email string `json:"email"`
-}
-
-type VerifyRegistrationPayload struct {
-        Name            string `json:"name"`
-        Password        string `json:"password"`
-        ConfirmPassword string `json:"confirm_password"`
-}
-
-type LoginPayload struct {
-        Email    string `json:"email"`
-        Password string `json:"password"`
-}
-
-type AuthResponse struct {
-        AccessToken  string `json:"access_token"`
-        RefreshToken string `json:"refresh_token"`
-}
-
-func RequestRegistration(c *fiber.Ctx) error <span class="cov0" title="0">{
-        config, err := utils.LoadMailEnv()
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, err.Error())
-        }</span>
-
-        <span class="cov0" title="0">frontendUrl := os.Getenv("FRONTEND_URL")
-        if frontendUrl == "" </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "FRONTEND_URL environment variable is not set.")
-        }</span>
-
-        <span class="cov0" title="0">requestPayload := RequestRegistrationPayload{}
-
-        if err := c.BodyParser(&amp;requestPayload); err != nil </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Invalid request body.")
-        }</span>
-
-        <span class="cov0" title="0">isEmailValid, emailValFeedback := utils.ValidateEmail(requestPayload.Email)
-        if !isEmailValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, emailValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">htmlBody, err := os.ReadFile("templates/email-verification.html")
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to load email template.")
-        }</span>
-
-        <span class="cov0" title="0">token, err := utils.CreateJWT(requestPayload.Email, "new user", "user", 10)
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to create JWT.")
-        }</span>
-
-        <span class="cov0" title="0">verificationLink := fmt.Sprintf(frontendUrl+"/verify-email?token=%s", token)
-
-        tmpl, err := template.New("email").Parse(string(htmlBody))
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to parse email template.")
-        }</span>
-
-        <span class="cov0" title="0">data := struct {
-                Email            string
-                VerificationLink string
-        }{
-                Email:            requestPayload.Email,
-                VerificationLink: verificationLink,
-        }
-
-        var emailBody strings.Builder
-        if err := tmpl.Execute(&amp;emailBody, data); err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to execute email template.")
-        }</span>
-
-        <span class="cov0" title="0">m := gomail.NewMessage()
-        m.SetHeader("From", config.SenderEmail)
-        m.SetHeader("To", requestPayload.Email)
-        m.SetHeader("Subject", "Email Verification")
-        m.SetBody("text/html", emailBody.String())
-
-        port, err := strconv.Atoi(config.SmtpPort)
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Invalid SMTP_PORT value.")
-        }</span>
-        <span class="cov0" title="0">d := gomail.NewDialer(config.SmtpHost, port, config.SmtpUser, config.SmtpPass)
-
-        if err := d.DialAndSend(m); err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to send confirmation email to user.")
-        }</span>
-
-        <span class="cov0" title="0">return response.Ok(c, "Successfully sent a confirmation email to user.")</span>
-}
-
-func VerifyRegistration(c *fiber.Ctx) error <span class="cov0" title="0">{
-        token := c.Locals("user").(*jwt.Token)
-        claims := token.Claims.(jwt.MapClaims)
-        email := claims["email"].(string)
-
-        requestPayload := VerifyRegistrationPayload{}
-
-        if err := c.BodyParser(&amp;requestPayload); err != nil </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Invalid request body.")
-        }</span>
-
-        <span class="cov0" title="0">if requestPayload.Password != requestPayload.ConfirmPassword </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Passwords do not match.")
-        }</span>
-
-        <span class="cov0" title="0">isEmailValid, emailValFeedback := utils.ValidateEmail(email)
-        if !isEmailValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, emailValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">isNameValid, nameValFeedback := utils.ValidateName(requestPayload.Name)
-        if !isNameValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, nameValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">isPasswordValid, passwordValFeedback := utils.ValidatePassword(requestPayload.Password)
-        if !isPasswordValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, passwordValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">db := c.Locals("db").(*gorm.DB)
-
-        var existingUser model.User
-        if err := db.Where("email = ?", email).First(&amp;existingUser).Error; err == nil </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Email already exists.")
-        }</span>
-
-        <span class="cov0" title="0">hashedPassword, err := utils.HashPassword(requestPayload.Password)
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to hash password.")
-        }</span>
-
-        <span class="cov0" title="0">user := model.User{
-                Name:     requestPayload.Name,
-                Email:    email,
-                Password: hashedPassword,
-                Role:     "user",
-        }
-
-        if err := db.Create(&amp;user).Error; err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Something went wrong. Please try again later.")
-        }</span>
-
-        <span class="cov0" title="0">authTokenPair, err := utils.CreateAuthTokenPair(c, email, requestPayload.Name, "user")
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to create authentication tokens.")
-        }</span>
-
-        <span class="cov0" title="0">accessCookie := utils.CreateSecureCookie("access_token", authTokenPair.AccessToken, 5*time.Minute)
-        refreshCookie := utils.CreateSecureCookie("refresh_token", authTokenPair.RefreshToken, 7*24*time.Hour)
-
-        c.Cookie(accessCookie)
-        c.Cookie(refreshCookie)
-
-        data := AuthResponse{
-                AccessToken:  authTokenPair.AccessToken,
-                RefreshToken: authTokenPair.RefreshToken,
-        }
-
-        return response.Ok(c, "Successfully verified and registered user.", data)</span>
-}
-
-func Login(c *fiber.Ctx) error <span class="cov0" title="0">{
-        requestPayload := LoginPayload{}
-
-        if err := c.BodyParser(&amp;requestPayload); err != nil </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Invalid request body.")
-        }</span>
-
-        <span class="cov0" title="0">isEmailValid, emailValFeedback := utils.ValidateEmail(requestPayload.Email)
-        if !isEmailValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, emailValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">isPasswordValid, passwordValFeedback := utils.ValidatePassword(requestPayload.Password)
-        if !isPasswordValid </span><span class="cov0" title="0">{
-                return response.BadRequest(c, passwordValFeedback)
-        }</span>
-
-        <span class="cov0" title="0">db := c.Locals("db").(*gorm.DB)
-
-        var user model.User
-        if err := db.Where("email = ?", requestPayload.Email).First(&amp;user).Error; err != nil </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Invalid email or password.")
-        }</span>
-
-        <span class="cov0" title="0">if !utils.CheckPasswordHash(requestPayload.Password, user.Password) </span><span class="cov0" title="0">{
-                return response.BadRequest(c, "Invalid email or password.")
-        }</span>
-
-        <span class="cov0" title="0">authTokenPair, err := utils.CreateAuthTokenPair(c, user.Email, user.Name, user.Role)
-        if err != nil </span><span class="cov0" title="0">{
-                return response.InternalServerError(c, "Failed to create JWT tokens.")
-        }</span>
-
-        <span class="cov0" title="0">accessCookie := utils.CreateSecureCookie("access_token", authTokenPair.AccessToken, 5*time.Minute)
-        refreshCookie := utils.CreateSecureCookie("refresh_token", authTokenPair.RefreshToken, 7*24*time.Hour)
-
-        c.Cookie(accessCookie)
-        c.Cookie(refreshCookie)
-
-        data := AuthResponse{
-                AccessToken:  authTokenPair.AccessToken,
-                RefreshToken: authTokenPair.RefreshToken,
-        }
-
-        return response.Ok(c, "Successfully logged user in.", data)</span>
-}
-
-func Logout(c *fiber.Ctx) error <span class="cov0" title="0">{
-        expiredAccessCookie := utils.InvalidateCookie("access_token")
-        expiredRefreshCookie := utils.InvalidateCookie("refresh_token")
-        c.Cookie(expiredAccessCookie)
-        c.Cookie(expiredRefreshCookie)
-        return response.Ok(c, "Successfully logged user out.")
-}</span>
-</pre>
-		
-		<pre class="file" id="file2" style="display: none">package handler
-
-import (
-        r "github.com/abyan.dev/auth/pkg/response"
-        "github.com/gofiber/fiber/v2"
-)
-
-func Health(c *fiber.Ctx) error <span class="cov0" title="0">{
-        return r.Ok(c, "Hello, World from an UNPROTECTED route!")
-}</span>
-
-func HealthProtected(c *fiber.Ctx) error <span class="cov0" title="0">{
-        return r.Ok(c, "Hello, World from a PROTECTED route!")
-}</span>
-</pre>
-		
-		<pre class="file" id="file3" style="display: none">package middleware
-
-import (
-        "os"
-
-        "github.com/abyan.dev/auth/pkg/response"
-        jwtware "github.com/gofiber/contrib/jwt"
-        "github.com/gofiber/fiber/v2"
-)
-
-func RequireAuthenticated() fiber.Handler <span class="cov0" title="0">{
-        return jwtware.New(jwtware.Config{
-                SigningKey:   jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
-                ErrorHandler: jwtErrorHandler,
-        })
-}</span>
-
-func jwtErrorHandler(c *fiber.Ctx, err error) error <span class="cov0" title="0">{
-        return response.Unauthorized(c, err.Error())
-}</span>
-</pre>
-		
-		<pre class="file" id="file4" style="display: none">package response
-
-import (
-        "github.com/gofiber/fiber/v2"
-)
-
-type Payload struct {
-        Status  uint        `json:"status"`
-        Message string      `json:"message"`
-        Data    interface{} `json:"data"`
-}
-
-func Ok(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusOK, message, data...)
-}</span>
-
-func Created(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusCreated, message, data...)
-}</span>
-
-func Accepted(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusAccepted, message, data...)
-}</span>
-
-func NoContent(c *fiber.Ctx) error <span class="cov0" title="0">{
-        return c.SendStatus(fiber.StatusNoContent)
-}</span>
-
-func BadRequest(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusBadRequest, message, data...)
-}</span>
-
-func Unauthorized(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusUnauthorized, message, data...)
-}</span>
-
-func Forbidden(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusForbidden, message, data...)
-}</span>
-
-func NotFound(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusNotFound, message, data...)
-}</span>
-
-func InternalServerError(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusInternalServerError, message, data...)
-}</span>
-
-func ServiceUnavailable(c *fiber.Ctx, message string, data ...interface{}) error <span class="cov0" title="0">{
-        return jsonResponse(c, fiber.StatusServiceUnavailable, message, data...)
-}</span>
-
-func jsonResponse(c *fiber.Ctx, status uint, message string, data ...interface{}) error <span class="cov0" title="0">{
-        var responseData interface{}
-        if len(data) &gt; 0 </span><span class="cov0" title="0">{
-                responseData = data[0]
-        }</span> else<span class="cov0" title="0"> {
-                responseData = nil
-        }</span>
-
-        <span class="cov0" title="0">payload := Payload{
-                Status:  status,
-                Message: message,
-                Data:    responseData,
-        }
-
-        return c.Status(int(status)).JSON(payload)</span>
-}
-</pre>
-		
-		<pre class="file" id="file5" style="display: none">package server
-
-import (
-        "fmt"
-        "log"
-        "log/slog"
-
-        "github.com/abyan.dev/auth/pkg/handler"
-        "github.com/abyan.dev/auth/pkg/middleware"
-        "github.com/abyan.dev/auth/pkg/model"
-        "github.com/abyan.dev/auth/pkg/utils"
-        "github.com/goccy/go-json"
-        "github.com/joho/godotenv"
-
-        "github.com/gofiber/fiber/v2"
-)
-
-func New() *fiber.App <span class="cov0" title="0">{
-        slog.Info("Loading environment variables...")
-        err := godotenv.Load()
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatal("Error loading .env file")
-        }</span>
-
-        <span class="cov0" title="0">config, err := utils.LoadConfig()
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Error loading configuration: %v", err)
-        }</span>
-
-        <span class="cov0" title="0">slog.Info("Connecting to database...")
-        db, err := utils.InitDB(config)
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Error connecting to the database: %v", err)
-        }</span>
-
-        <span class="cov0" title="0">slog.Info("Applying database migrations...")
-        if err := db.AutoMigrate(&amp;model.User{}); err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Error auto-migrating database: %v", err)
-        }</span>
-
-        <span class="cov0" title="0">slog.Info("Setting up the app...")
-
-        app := fiber.New(fiber.Config{
-                JSONEncoder: json.Marshal,
-                JSONDecoder: json.Unmarshal,
-        })
-
-        app.Use(func(c *fiber.Ctx) error </span><span class="cov0" title="0">{
-                c.Locals("db", db)
-                return c.Next()
-        }</span>)
-
-        <span class="cov0" title="0">slog.Info("Loading routes...")
-
-        initRouter(app)
-
-        return app</span>
-}
-
-func initRouter(app fiber.Router) <span class="cov0" title="0">{
-        api := app.Group("/api")
-
-        api.Get("/health", handler.Health)
-        api.Get("/health/protected", middleware.RequireAuthenticated(), handler.HealthProtected)
-        api.Post("/auth/register/request", handler.RequestRegistration)
-        api.Post("/auth/register/verify", middleware.RequireAuthenticated(), handler.VerifyRegistration)
-        api.Post("/auth/login", handler.Login)
-        api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
-}</span>
-
-func Run(app *fiber.App) <span class="cov0" title="0">{
-        slog.Info("Server is now listening on port 8080...")
-        if err := app.Listen(":8080"); err != nil </span><span class="cov0" title="0">{
-                slog.Error(fmt.Sprintf("Failed to start server: %v", err))
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file6" style="display: none">package utils
-
-import (
-        "fmt"
-        "os"
-        "strconv"
-
-        "github.com/joho/godotenv"
         "gorm.io/driver/postgres"
         "gorm.io/gorm"
 )
@@ -543,17 +96,13 @@ type Config struct {
         DBName     string
 }
 
-func LoadConfig() (*Config, error) <span class="cov0" title="0">{
-        if err := godotenv.Load(); err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
-
-        <span class="cov0" title="0">port, err := strconv.Atoi(os.Getenv("POSTGRES_PORT"))
+func LoadConfig() (*Config, error) <span class="cov8" title="1">{
+        port, err := strconv.Atoi(os.Getenv("POSTGRES_PORT"))
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov0" title="0">config := &amp;Config{
+        <span class="cov8" title="1">config := &amp;Config{
                 DBHost:     os.Getenv("POSTGRES_HOST"),
                 DBPort:     port,
                 DBUser:     os.Getenv("POSTGRES_USER"),
@@ -564,32 +113,32 @@ func LoadConfig() (*Config, error) <span class="cov0" title="0">{
         return config, nil</span>
 }
 
-func InitDB(config *Config) (*gorm.DB, error) <span class="cov0" title="0">{
+func InitDB(config *Config) (*gorm.DB, error) <span class="cov8" title="1">{
         dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
                 config.DBHost, config.DBUser, config.DBPassword, config.DBName, config.DBPort)
         return gorm.Open(postgres.Open(dsn), &amp;gorm.Config{})
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package utils
+		<pre class="file" id="file1" style="display: none">package utils
 
 import (
         "golang.org/x/crypto/bcrypt"
 )
 
-func HashPassword(password string) (string, error) <span class="cov0" title="0">{
+func HashPassword(password string) (string, error) <span class="cov8" title="1">{
         bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
         return string(bytes), err
 }</span>
 
 // CheckPasswordHash compares a hashed password with a plain text password
-func CheckPasswordHash(password, hash string) bool <span class="cov0" title="0">{
+func CheckPasswordHash(password, hash string) bool <span class="cov8" title="1">{
         err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
         return err == nil
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package utils
+		<pre class="file" id="file2" style="display: none">package utils
 
 import (
         "errors"
@@ -605,7 +154,7 @@ type AuthTokenPair struct {
         RefreshToken string
 }
 
-func CreateJWT(email string, name string, role string, expirationMinutes int) (string, error) <span class="cov0" title="0">{
+func CreateJWT(email string, name string, role string, expirationMinutes int) (string, error) <span class="cov8" title="1">{
         claims := jwt.MapClaims{
                 "email": email,
                 "name":  name,
@@ -620,26 +169,26 @@ func CreateJWT(email string, name string, role string, expirationMinutes int) (s
                 return "", errors.New("JWT_SECRET environment variable is not set")
         }</span>
 
-        <span class="cov0" title="0">t, err := token.SignedString([]byte(secret))
+        <span class="cov8" title="1">t, err := token.SignedString([]byte(secret))
         if err != nil </span><span class="cov0" title="0">{
                 return "", err
         }</span>
 
-        <span class="cov0" title="0">return t, nil</span>
+        <span class="cov8" title="1">return t, nil</span>
 }
 
-func CreateAuthTokenPair(c *fiber.Ctx, email string, name string, role string) (AuthTokenPair, error) <span class="cov0" title="0">{
+func CreateAuthTokenPair(c *fiber.Ctx, email string, name string, role string) (AuthTokenPair, error) <span class="cov8" title="1">{
         accessToken, err := CreateJWT(email, name, role, 5) // 5 minutes
         if err != nil </span><span class="cov0" title="0">{
                 return AuthTokenPair{}, errors.New("failed to create access token")
         }</span>
 
-        <span class="cov0" title="0">refreshToken, err := CreateJWT(email, name, role, 7*24*60) // 7 days
+        <span class="cov8" title="1">refreshToken, err := CreateJWT(email, name, role, 7*24*60) // 7 days
         if err != nil </span><span class="cov0" title="0">{
                 return AuthTokenPair{}, errors.New("failed to create refresh token")
         }</span>
 
-        <span class="cov0" title="0">authTokenPair := AuthTokenPair{
+        <span class="cov8" title="1">authTokenPair := AuthTokenPair{
                 AccessToken:  accessToken,
                 RefreshToken: refreshToken,
         }
@@ -647,7 +196,7 @@ func CreateAuthTokenPair(c *fiber.Ctx, email string, name string, role string) (
         return authTokenPair, nil</span>
 }
 
-func CreateSecureCookie(name string, value string, expiration time.Duration) *fiber.Cookie <span class="cov0" title="0">{
+func CreateSecureCookie(name string, value string, expiration time.Duration) *fiber.Cookie <span class="cov8" title="1">{
         return &amp;fiber.Cookie{
                 Name:     name,
                 Value:    value,
@@ -657,7 +206,7 @@ func CreateSecureCookie(name string, value string, expiration time.Duration) *fi
         }
 }</span>
 
-func InvalidateCookie(name string) *fiber.Cookie <span class="cov0" title="0">{
+func InvalidateCookie(name string) *fiber.Cookie <span class="cov8" title="1">{
         return &amp;fiber.Cookie{
                 Name:     name,
                 Value:    "",
@@ -668,13 +217,11 @@ func InvalidateCookie(name string) *fiber.Cookie <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package utils
+		<pre class="file" id="file3" style="display: none">package utils
 
 import (
         "errors"
         "os"
-
-        "github.com/joho/godotenv"
 )
 
 type MailEnvConfig struct {
@@ -685,12 +232,8 @@ type MailEnvConfig struct {
         SmtpPass    string
 }
 
-func LoadMailEnv() (*MailEnvConfig, error) <span class="cov0" title="0">{
-        if err := godotenv.Load(); err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
-
-        <span class="cov0" title="0">config := &amp;MailEnvConfig{
+func LoadMailEnv() (*MailEnvConfig, error) <span class="cov8" title="1">{
+        config := &amp;MailEnvConfig{
                 SenderEmail: os.Getenv("SENDER_EMAIL"),
                 SmtpHost:    os.Getenv("SMTP_HOST"),
                 SmtpPort:    os.Getenv("SMTP_PORT"),
@@ -698,15 +241,15 @@ func LoadMailEnv() (*MailEnvConfig, error) <span class="cov0" title="0">{
                 SmtpPass:    os.Getenv("SMTP_PASS"),
         }
 
-        if config.SenderEmail == "" </span><span class="cov0" title="0">{
+        if config.SenderEmail == "" </span><span class="cov8" title="1">{
                 return nil, errors.New("SENDER_EMAIL environment variable is not set")
         }</span>
 
-        <span class="cov0" title="0">return config, nil</span>
+        <span class="cov8" title="1">return config, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package utils
+		<pre class="file" id="file4" style="display: none">package utils
 
 import (
         "regexp"
@@ -716,54 +259,54 @@ import (
         goaway "github.com/TwiN/go-away"
 )
 
-func ValidateEmail(email string) (bool, string) <span class="cov0" title="0">{
+func ValidateEmail(email string) (bool, string) <span class="cov8" title="1">{
         const emailRegexPattern = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
         re := regexp.MustCompile(emailRegexPattern)
-        if !re.MatchString(email) </span><span class="cov0" title="0">{
-                if !strings.Contains(email, "@") </span><span class="cov0" title="0">{
+        if !re.MatchString(email) </span><span class="cov8" title="1">{
+                if !strings.Contains(email, "@") </span><span class="cov8" title="1">{
                         return false, "Email must contain an '@' symbol"
                 }</span>
-                <span class="cov0" title="0">if !strings.Contains(email, ".") </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if !strings.Contains(email, ".") </span><span class="cov8" title="1">{
                         return false, "Email must contain a '.' symbol"
                 }</span>
-                <span class="cov0" title="0">if strings.Contains(email, " ") </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if strings.Contains(email, " ") </span><span class="cov8" title="1">{
                         return false, "Email must not contain spaces"
                 }</span>
-                <span class="cov0" title="0">return false, "Email format is invalid"</span>
+                <span class="cov8" title="1">return false, "Email format is invalid"</span>
         }
-        <span class="cov0" title="0">return true, "Email is valid"</span>
+        <span class="cov8" title="1">return true, "Email is valid"</span>
 }
 
-func ValidateName(name string) (bool, string) <span class="cov0" title="0">{
+func ValidateName(name string) (bool, string) <span class="cov8" title="1">{
         const displayNameRegexPattern = `^[a-zA-Z0-9][a-zA-Z0-9 _-]{1,28}[a-zA-Z0-9]$`
         re := regexp.MustCompile(displayNameRegexPattern)
 
-        if len(name) &lt; 3 || len(name) &gt; 30 </span><span class="cov0" title="0">{
+        if len(name) &lt; 3 || len(name) &gt; 30 </span><span class="cov8" title="1">{
                 return false, "Name must be between 3 and 30 characters long"
         }</span>
 
-        <span class="cov0" title="0">if strings.Contains(name, "  ") </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if strings.Contains(name, "  ") </span><span class="cov8" title="1">{
                 return false, "Name must not contain consecutive spaces"
         }</span>
 
-        <span class="cov0" title="0">if !re.MatchString(name) </span><span class="cov0" title="0">{
-                if !regexp.MustCompile(`^[a-zA-Z0-9]`).MatchString(name) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !re.MatchString(name) </span><span class="cov8" title="1">{
+                if !regexp.MustCompile(`^[a-zA-Z0-9]`).MatchString(name) </span><span class="cov8" title="1">{
                         return false, "Name must start with an alphanumeric character"
                 }</span>
-                <span class="cov0" title="0">if !regexp.MustCompile(`[a-zA-Z0-9]$`).MatchString(name) </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if !regexp.MustCompile(`[a-zA-Z0-9]$`).MatchString(name) </span><span class="cov8" title="1">{
                         return false, "Name must end with an alphanumeric character"
                 }</span>
-                <span class="cov0" title="0">return false, "Name contains invalid characters"</span>
+                <span class="cov8" title="1">return false, "Name contains invalid characters"</span>
         }
 
-        <span class="cov0" title="0">if goaway.IsProfane(name) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if goaway.IsProfane(name) </span><span class="cov8" title="1">{
                 return false, "Name contains profane words"
         }</span>
 
-        <span class="cov0" title="0">return true, "Name is valid"</span>
+        <span class="cov8" title="1">return true, "Name is valid"</span>
 }
 
-func ValidatePassword(password string) (bool, string) <span class="cov0" title="0">{
+func ValidatePassword(password string) (bool, string) <span class="cov8" title="1">{
         var (
                 hasMinLen    = false
                 hasUpperCase = false
@@ -772,40 +315,40 @@ func ValidatePassword(password string) (bool, string) <span class="cov0" title="
                 hasSpecial   = false
         )
 
-        if len(password) &gt;= 8 </span><span class="cov0" title="0">{
+        if len(password) &gt;= 8 </span><span class="cov8" title="1">{
                 hasMinLen = true
         }</span>
 
-        <span class="cov0" title="0">for _, char := range password </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">for _, char := range password </span><span class="cov8" title="1">{
                 switch </span>{
-                case unicode.IsUpper(char):<span class="cov0" title="0">
+                case unicode.IsUpper(char):<span class="cov8" title="1">
                         hasUpperCase = true</span>
-                case unicode.IsLower(char):<span class="cov0" title="0">
+                case unicode.IsLower(char):<span class="cov8" title="1">
                         hasLowerCase = true</span>
-                case unicode.IsNumber(char):<span class="cov0" title="0">
+                case unicode.IsNumber(char):<span class="cov8" title="1">
                         hasNumber = true</span>
-                case unicode.IsPunct(char) || unicode.IsSymbol(char):<span class="cov0" title="0">
+                case unicode.IsPunct(char) || unicode.IsSymbol(char):<span class="cov8" title="1">
                         hasSpecial = true</span>
                 }
         }
 
-        <span class="cov0" title="0">if !hasMinLen </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !hasMinLen </span><span class="cov8" title="1">{
                 return false, "Password must be at least 8 characters long"
         }</span>
-        <span class="cov0" title="0">if !hasUpperCase </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !hasUpperCase </span><span class="cov8" title="1">{
                 return false, "Password must contain at least one uppercase letter"
         }</span>
-        <span class="cov0" title="0">if !hasLowerCase </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !hasLowerCase </span><span class="cov8" title="1">{
                 return false, "Password must contain at least one lowercase letter"
         }</span>
-        <span class="cov0" title="0">if !hasNumber </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !hasNumber </span><span class="cov8" title="1">{
                 return false, "Password must contain at least one number"
         }</span>
-        <span class="cov0" title="0">if !hasSpecial </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if !hasSpecial </span><span class="cov8" title="1">{
                 return false, "Password must contain at least one special character"
         }</span>
 
-        <span class="cov0" title="0">return true, "Password is valid"</span>
+        <span class="cov8" title="1">return true, "Password is valid"</span>
 }
 </pre>
 		

@@ -3,8 +3,6 @@ package utils
 import (
 	"errors"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type MailEnvConfig struct {
@@ -16,10 +14,6 @@ type MailEnvConfig struct {
 }
 
 func LoadMailEnv() (*MailEnvConfig, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, err
-	}
-
 	config := &MailEnvConfig{
 		SenderEmail: os.Getenv("SENDER_EMAIL"),
 		SmtpHost:    os.Getenv("SMTP_HOST"),
