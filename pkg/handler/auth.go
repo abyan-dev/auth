@@ -167,12 +167,12 @@ func Verify(c *fiber.Ctx) error {
 	db := c.Locals("db").(*gorm.DB)
 
 	var u model.User
-	if err := db.Where("email = ?", email).First(&u).Error; err == nil {
-		return response.BadRequest(c, "Email already exists.")
+	if err := db.Where("email = ?", email).First(&u).Error; err != nil {
+		return response.BadRequest(c, "Email not found.")
 	}
 
-	if err := db.UpdateColumn("verified", true).Error; err != nil {
-		return response.InternalServerError(c, "Something went wrong. Please try again later.")
+	if err := db.Model(&u).Update("verified", true).Error; err != nil {
+		return response.InternalServerError(c, err.Error())
 	}
 
 	authTokenPair, err := utils.CreateAuthTokenPair(c, u.Email, u.Name, u.Role)
