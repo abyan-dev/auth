@@ -62,8 +62,8 @@ func initRouter(app fiber.Router) {
 
 	api.Get("/health", handler.Health)
 	api.Get("/health/protected", middleware.RequireAuthenticated(), handler.HealthProtected)
-	api.Post("/auth/register/request", handler.RequestRegistration)
-	api.Post("/auth/register/verify", middleware.RequireAuthenticated(), handler.VerifyRegistration)
+	api.Post("/auth/register", handler.Register)
+	api.Post("/auth/verify", middleware.RequireAuthenticated(), handler.Verify)
 	api.Post("/auth/login", handler.Login)
 	api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
 }

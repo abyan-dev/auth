@@ -17,12 +17,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type RequestRegistrationPayload struct {
-	Email string `json:"email"`
-}
-
-type VerifyRegistrationPayload struct {
+type RegisterPayload struct {
 	Name            string `json:"name"`
+	Email           string `json:"email"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirm_password"`
 }
@@ -37,7 +34,7 @@ type AuthResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func RequestRegistration(c *fiber.Ctx) error {
+func Register(c *fiber.Ctx) error {
 	config, err := utils.LoadMailEnv()
 	if err != nil {
 		return response.InternalServerError(c, err.Error())
@@ -48,7 +45,7 @@ func RequestRegistration(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "FRONTEND_URL environment variable is not set.")
 	}
 
-	requestPayload := RequestRegistrationPayload{}
+	requestPayload := RegisterPayload{}
 
 	if err := c.BodyParser(&requestPayload); err != nil {
 		return response.BadRequest(c, "Invalid request body.")
@@ -57,6 +54,38 @@ func RequestRegistration(c *fiber.Ctx) error {
 	isEmailValid, emailValFeedback := utils.ValidateEmail(requestPayload.Email)
 	if !isEmailValid {
 		return response.BadRequest(c, emailValFeedback)
+	}
+
+	if requestPayload.ConfirmPassword != requestPayload.Password {
+		return response.BadRequest(c, "Passwords do not match.")
+	}
+
+	isValidPassword, passwordlValFeedback := utils.ValidatePassword(requestPayload.Password)
+	if !isValidPassword {
+		return response.BadRequest(c, passwordlValFeedback)
+	}
+
+	isValidName, nameValFeedback := utils.ValidateName(requestPayload.Name)
+	if !isValidName {
+		return response.BadRequest(c, nameValFeedback)
+	}
+
+	hashedPassword, err := utils.HashPassword(requestPayload.Password)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to hash password.")
+	}
+
+	user := model.User{
+		Name:     requestPayload.Name,
+		Email:    requestPayload.Email,
+		Password: hashedPassword,
+		Role:     "user",
+		Verified: false,
+	}
+
+	db := c.Locals("db").(*gorm.DB)
+	if err := db.Create(&user).Error; err != nil {
+		return response.InternalServerError(c, "Failed to create user.")
 	}
 
 	htmlBody, err := os.ReadFile("templates/email-verification.html")
@@ -108,60 +137,29 @@ func RequestRegistration(c *fiber.Ctx) error {
 	return response.Ok(c, "Successfully sent a confirmation email to user.")
 }
 
-func VerifyRegistration(c *fiber.Ctx) error {
+func Verify(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	email := claims["email"].(string)
-
-	requestPayload := VerifyRegistrationPayload{}
-
-	if err := c.BodyParser(&requestPayload); err != nil {
-		return response.BadRequest(c, "Invalid request body.")
-	}
-
-	if requestPayload.Password != requestPayload.ConfirmPassword {
-		return response.BadRequest(c, "Passwords do not match.")
-	}
 
 	isEmailValid, emailValFeedback := utils.ValidateEmail(email)
 	if !isEmailValid {
 		return response.BadRequest(c, emailValFeedback)
 	}
 
-	isNameValid, nameValFeedback := utils.ValidateName(requestPayload.Name)
-	if !isNameValid {
-		return response.BadRequest(c, nameValFeedback)
-	}
-
-	isPasswordValid, passwordValFeedback := utils.ValidatePassword(requestPayload.Password)
-	if !isPasswordValid {
-		return response.BadRequest(c, passwordValFeedback)
-	}
-
 	db := c.Locals("db").(*gorm.DB)
 
-	var existingUser model.User
-	if err := db.Where("email = ?", email).First(&existingUser).Error; err == nil {
+	var u model.User
+	if err := db.Where("email = ?", email).First(&u).Error; err == nil {
 		return response.BadRequest(c, "Email already exists.")
 	}
 
-	hashedPassword, err := utils.HashPassword(requestPayload.Password)
-	if err != nil {
-		return response.InternalServerError(c, "Failed to hash password.")
-	}
-
-	user := model.User{
-		Name:     requestPayload.Name,
-		Email:    email,
-		Password: hashedPassword,
-		Role:     "user",
-	}
-
-	if err := db.Create(&user).Error; err != nil {
+	if err := db.UpdateColumn("verified", true).Error; err != nil {
 		return response.InternalServerError(c, "Something went wrong. Please try again later.")
 	}
 
-	authTokenPair, err := utils.CreateAuthTokenPair(c, email, requestPayload.Name, "user")
+	authTokenPair, err := utils.CreateAuthTokenPair(c, u.Email, u.Name, u.Role)
+
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create authentication tokens.")
 	}
