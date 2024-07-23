@@ -33,4 +33,4 @@ Finally, run the server:
 make run
 ```
 
-There is a `GET` health check to verify the server is up and running at `/api/health`, as well as a protected variant at `/api/health/protected` for testing the authorization middleware.
+There is a `GET` health check to verify the server is up and running at `/api/health`, as well as one at `/api/health/protected` for testing the authorization middleware.
