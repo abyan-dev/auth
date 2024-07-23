@@ -1,0 +1,4 @@
+*.exe
+cmd/api/*.exe
+coverage.out
+.env

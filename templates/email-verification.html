@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            margin-top: 20px;
+        }
+
+        .content p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>abyan.dev</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{.Email}},</p>
+            <p>I have received a request to register to my site using your email address. If you made this request,
+                then please continue with the registration process using the following link: <a
+                    href="{{.VerificationLink}}">{{.VerificationLink}}</a></p>
+            <p>If you did not request this email, please ignore it.</p>
+            <p>Regards,</p><br>Abyan
+        </div>
+    </div>
+</body>
+
+</html>
