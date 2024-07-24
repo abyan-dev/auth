@@ -2,7 +2,7 @@
 
 ![Tests](https://github.com/abyan-dev/auth/actions/workflows/ci.yaml/badge.svg) [![codecov](https://codecov.io/gh/abyan-dev/auth/graph/badge.svg?token=S679A5TSW7)](https://codecov.io/gh/abyan-dev/auth) [![Go Report](https://goreportcard.com/badge/abyan-dev/auth)](https://goreportcard.com/report/YanSystems/compiler) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/YanSystems/compiler/blob/main/LICENSE)
 
-Authentication, authorization, and account management service that exposes a REST API for issuing access and refresh JSON Web Tokens. Tokens are stored in `httponly` and `strict` samesite cookies, thereby protected from XSS and CSRF attacks, and are additionally revoked on logout. 
+Authentication, authorization, and account management service that exposes a REST API for issuing access and refresh JSON Web Tokens. Tokens are stored in `httponly` and `strict` samesite cookies, thereby protected from XSS and CSRF attacks, and are revoked on logout. 
 
 There is additionally a scheduling of the deletion of unverified accounts, which runs concurrently on a separate goroutine.
 
