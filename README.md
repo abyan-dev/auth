@@ -22,7 +22,7 @@ The service uses postgres with GORM to store user credentials. It can also use m
 
 ```
 make db-up
-mail mailhog-up
+make mailhog-up
 ```
 
 You can stop both services by running `make db-down` and `make mailhog-down` when you're done.
