@@ -10,7 +10,6 @@ import (
 	"github.com/abyan-dev/auth/pkg/model"
 	"github.com/abyan-dev/auth/pkg/utils"
 	"github.com/goccy/go-json"
-	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,10 +21,6 @@ type Server struct {
 
 func (s *Server) New() *fiber.App {
 	slog.Info("Loading environment variables...")
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	config, err := utils.LoadConfig()
 	if err != nil {

@@ -9,7 +9,6 @@ require (
 	github.com/gofiber/contrib/jwt v1.0.10
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/joho/godotenv v1.5.1
 	github.com/valyala/fasthttp v1.51.0
 	golang.org/x/crypto v0.17.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

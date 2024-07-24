@@ -176,7 +176,6 @@ func Verify(c *fiber.Ctx) error {
 	}
 
 	authTokenPair, err := utils.CreateAuthTokenPair(c, u.Email, u.Name, u.Role)
-
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create authentication tokens.")
 	}
