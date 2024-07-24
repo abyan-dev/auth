@@ -296,6 +296,23 @@ func Refresh(c *fiber.Ctx) error {
 }
 
 func Logout(c *fiber.Ctx) error {
+	accessToken := model.RevokedToken{
+		Token: c.Cookies("access_token"),
+	}
+	refreshToken := model.RevokedToken{
+		Token: c.Cookies("refresh_token"),
+	}
+
+	db := c.Locals("db").(*gorm.DB)
+
+	if err := db.Create(&accessToken).Error; err != nil {
+		return response.InternalServerError(c, "Failed to revoke access token.")
+	}
+
+	if err := db.Create(&refreshToken).Error; err != nil {
+		return response.InternalServerError(c, "Failed to revoke refresh token.")
+	}
+
 	expiredAccessCookie := utils.InvalidateCookie("access_token")
 	expiredRefreshCookie := utils.InvalidateCookie("refresh_token")
 	c.Cookie(expiredAccessCookie)

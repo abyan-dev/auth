@@ -36,7 +36,7 @@ func (s *Server) New() *fiber.App {
 	s.DB = db
 
 	slog.Info("Applying database migrations...")
-	if err := db.AutoMigrate(&model.User{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.RevokedToken{}); err != nil {
 		log.Fatalf("Error auto-migrating database: %v", err)
 	}
 

@@ -2,3 +2,4 @@
 cmd/api/*.exe
 coverage.out
 .env
+auth
