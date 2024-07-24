@@ -6,16 +6,16 @@ Authentication, authorization, and account management service that exposes a RES
 
 ## Running the service locally
 
-Initialize `.env` by running:
-
-```
-cp .env.default .env
-```
-
-Make sure to populate the `JWT_SECRET` environment variable. To generate a random key, use:
+Make sure to populate the `JWT_SECRET` environment variable in `.env.default`. To generate a random key, use:
 
 ```
 openssl rand -base64 64
+```
+
+Now, load the environment variables to your shell session:
+
+```
+cp .env.default .env && source .env
 ```
 
 The service uses postgres with GORM to store user credentials. It can also use mailhog on port `8025` to simulate the sending of verification emails locally. To start both postgres and mailhog as containers, run:

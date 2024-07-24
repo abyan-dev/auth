@@ -34,6 +34,10 @@ type AuthResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type RefreshResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
 type UserResponse struct {
 	ID        uint      `json:"id"`
 	Name      string    `json:"name"`
@@ -239,6 +243,56 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	return response.Ok(c, "Successfully logged user in.", data)
+}
+
+func Refresh(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return response.Unauthorized(c, "Refresh token is required.")
+	}
+
+	refreshToken := strings.TrimPrefix(authHeader, "Bearer ")
+	if refreshToken == authHeader {
+		return response.Unauthorized(c, "Invalid Authorization header format.")
+	}
+
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token.")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token claims.")
+	}
+
+	email, emailOk := claims["email"].(string)
+	name, nameOk := claims["name"].(string)
+	role, roleOk := claims["role"].(string)
+
+	if !emailOk || !nameOk || !roleOk {
+		return response.Unauthorized(c, "Invalid refresh token claims.")
+	}
+
+	accessToken, err := utils.CreateJWT(email, name, role, 5)
+	if err != nil {
+		return response.InternalServerError(c, "Something went wrong.")
+	}
+
+	accessCookie := utils.CreateSecureCookie("access_token", accessToken, 7*24*time.Hour)
+	c.Cookie(accessCookie)
+
+	data := RefreshResponse{
+		AccessToken: accessToken,
+	}
+
+	return response.Ok(c, "Successfully refreshed access token.", data)
 }
 
 func Logout(c *fiber.Ctx) error {

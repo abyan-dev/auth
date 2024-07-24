@@ -68,6 +68,7 @@ func (s *Server) initRouter(app fiber.Router) {
 	api.Post("/auth/verify", middleware.RequireAuthenticated(), handler.Verify)
 	api.Post("/auth/login", handler.Login)
 	api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
+	api.Post("/auth/refresh", middleware.RequireAuthenticated(), handler.Refresh)
 }
 
 func (s *Server) Run(app *fiber.App) {
