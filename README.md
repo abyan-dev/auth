@@ -52,3 +52,5 @@ docker run -p 8080:8080 --name auth auth
 ```
 
 Your application can interact with the service at `http://localhost:8080`. If you use an orchestration tool like Docker Compose or Kubernetes, you can leverage their DNS to simplify routing by referring to the container's name i.e., "auth" at `http://auth:8080` and you can remove the port flag.
+
+**PRODUCTION:** In production, remember to configure the environment variables for email sending with actual delivery services like Mailgun.
