@@ -123,7 +123,7 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to load email template.")
 	}
 
-	token, err := utils.CreateJWT(requestPayload.Email, "new user", "user", 10)
+	token, err := utils.CreateJWT(requestPayload.Email, "new user", "user", 30)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create JWT.")
 	}
@@ -164,15 +164,7 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to send confirmation email to user.")
 	}
 
-	u := UserResponse{
-		Name:      user.Name,
-		Email:     requestPayload.Email,
-		Role:      "user",
-		Verified:  false,
-		CreatedAt: time.Now(),
-	}
-
-	return response.Ok(c, "Successfully sent a verification email to user.", u)
+	return response.Ok(c, "Successfully sent a verification email to user.")
 }
 
 func Verify(c *fiber.Ctx) error {
@@ -218,12 +210,7 @@ func Verify(c *fiber.Ctx) error {
 	c.Cookie(accessCookie)
 	c.Cookie(refreshCookie)
 
-	data := AuthResponse{
-		AccessToken:  authTokenPair.AccessToken,
-		RefreshToken: authTokenPair.RefreshToken,
-	}
-
-	return response.Ok(c, "Successfully verified and registered user.", data)
+	return response.Ok(c, "Successfully verified and registered user.")
 }
 
 func Login(c *fiber.Ctx) error {
@@ -273,65 +260,10 @@ func Login(c *fiber.Ctx) error {
 	return response.Ok(c, "Successfully logged user in.", data)
 }
 
-func Refresh(c *fiber.Ctx) error {
-	refreshToken := c.Cookies("refresh_token")
-
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
-
-	if err != nil || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token.")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
-	}
-
-	email, emailOk := claims["email"].(string)
-	name, nameOk := claims["name"].(string)
-	role, roleOk := claims["role"].(string)
-
-	if !emailOk || !nameOk || !roleOk {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
-	}
-
-	accessToken, err := utils.CreateJWT(email, name, role, 5)
-	if err != nil {
-		return response.InternalServerError(c, "Something went wrong.")
-	}
-
-	accessCookie := utils.CreateSecureCookie("access_token", accessToken, 7*24*time.Hour)
-	c.Cookie(accessCookie)
-
-	data := RefreshResponse{
-		AccessToken: accessToken,
-	}
-
-	return response.Ok(c, "Successfully refreshed access token.", data)
-}
-
 func Decode(c *fiber.Ctx) error {
-	accessToken := c.Cookies("access_token")
-
-	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
-
-	if err != nil || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token.")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
+	claims, ok := c.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return response.Unauthorized(c, "Invalid user claims")
 	}
 
 	email, emailOk := claims["email"].(string)
@@ -339,7 +271,7 @@ func Decode(c *fiber.Ctx) error {
 	role, roleOk := claims["role"].(string)
 
 	if !emailOk || !nameOk || !roleOk {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
+		return response.Unauthorized(c, "Invalid user claims")
 	}
 
 	data := DecodeResponse{

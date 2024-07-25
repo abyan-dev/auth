@@ -74,11 +74,10 @@ func (s *Server) initRouter(app fiber.Router) {
 	api.Get("/health/protected", middleware.RequireAuthenticated(), handler.HealthProtected)
 
 	api.Post("/auth/register", handler.Register)
-	api.Post("/auth/verify", middleware.RequireAuthenticated(), handler.Verify)
+	api.Post("/auth/verify", handler.Verify)
 	api.Post("/auth/login", handler.Login)
 	api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
-	api.Post("/auth/refresh", handler.Refresh)
-	api.Post("/auth/decode", middleware.RequireAuthenticated(), handler.Decode)
+	api.Get("/auth/decode", middleware.RequireAuthenticated(), handler.Decode)
 }
 
 func (s *Server) Run(app *fiber.App) {
