@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"os"
-	"strings"
 
 	"github.com/abyan-dev/auth/pkg/model"
 	"github.com/abyan-dev/auth/pkg/response"
@@ -16,6 +15,7 @@ func RequireAuthenticated() fiber.Handler {
 		SigningKey:     jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
 		ErrorHandler:   jwtErrorHandler,
 		SuccessHandler: checkForRevocation,
+		TokenLookup:    "cookie:access_token",
 	})
 }
 
@@ -24,7 +24,7 @@ func jwtErrorHandler(c *fiber.Ctx, err error) error {
 }
 
 func checkForRevocation(c *fiber.Ctx) error {
-	token := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
+	token := c.Cookies("access_token")
 	if token == "" {
 		return response.Unauthorized(c, "Missing or malformed token")
 	}

@@ -48,6 +48,12 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type DecodeResponse struct {
+	Name  string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
 func Register(c *fiber.Ctx) error {
 	config, err := utils.LoadMailEnv()
 	if err != nil {
@@ -170,7 +176,18 @@ func Register(c *fiber.Ctx) error {
 }
 
 func Verify(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
+	tokenStr := c.Query("token")
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token.")
+	}
+
 	claims := token.Claims.(jwt.MapClaims)
 	email := claims["email"].(string)
 
@@ -257,15 +274,7 @@ func Login(c *fiber.Ctx) error {
 }
 
 func Refresh(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return response.Unauthorized(c, "Refresh token is required.")
-	}
-
-	refreshToken := strings.TrimPrefix(authHeader, "Bearer ")
-	if refreshToken == authHeader {
-		return response.Unauthorized(c, "Invalid Authorization header format.")
-	}
+	refreshToken := c.Cookies("refresh_token")
 
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -304,6 +313,42 @@ func Refresh(c *fiber.Ctx) error {
 	}
 
 	return response.Ok(c, "Successfully refreshed access token.", data)
+}
+
+func Decode(c *fiber.Ctx) error {
+	accessToken := c.Cookies("access_token")
+
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token.")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token claims.")
+	}
+
+	email, emailOk := claims["email"].(string)
+	name, nameOk := claims["name"].(string)
+	role, roleOk := claims["role"].(string)
+
+	if !emailOk || !nameOk || !roleOk {
+		return response.Unauthorized(c, "Invalid refresh token claims.")
+	}
+
+	data := DecodeResponse{
+		Name:  name,
+		Email: email,
+		Role:  role,
+	}
+
+	return response.Ok(c, "Successfully extracted user information", data)
 }
 
 func Logout(c *fiber.Ctx) error {
