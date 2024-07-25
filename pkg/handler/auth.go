@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -69,6 +70,17 @@ func Register(c *fiber.Ctx) error {
 		return response.BadRequest(c, emailValFeedback)
 	}
 
+	db := c.Locals("db").(*gorm.DB)
+
+	existingUser := model.User{}
+	result := db.Where("email = ?", requestPayload.Email).First(&existingUser)
+
+	if result.Error == nil {
+		return response.BadRequest(c, "User with this email already exists")
+	} else if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return response.InternalServerError(c, result.Error.Error())
+	}
+
 	if requestPayload.ConfirmPassword != requestPayload.Password {
 		return response.BadRequest(c, "Passwords do not match.")
 	}
@@ -96,7 +108,6 @@ func Register(c *fiber.Ctx) error {
 		Verified: false,
 	}
 
-	db := c.Locals("db").(*gorm.DB)
 	if err := db.Create(&user).Error; err != nil {
 		return response.InternalServerError(c, "Failed to create user.")
 	}
@@ -111,7 +122,7 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to create JWT.")
 	}
 
-	verificationLink := fmt.Sprintf(frontendUrl+"/verify-email?token=%s", token)
+	verificationLink := fmt.Sprintf(frontendUrl+"/auth/verify?token=%s", token)
 
 	tmpl, err := template.New("email").Parse(string(htmlBody))
 	if err != nil {

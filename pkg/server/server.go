@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 type Server struct {
@@ -61,6 +62,13 @@ func (s *Server) New() *fiber.App {
 
 func (s *Server) initRouter(app fiber.Router) {
 	api := app.Group("/api")
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",                  // Allow specific origin
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS", // Allow all methods
+		AllowHeaders:     "Content-Type, Authorization",            // Allow specific headers
+		AllowCredentials: true,
+	}))
 
 	api.Get("/health", handler.Health)
 	api.Get("/health/protected", middleware.RequireAuthenticated(), handler.HealthProtected)

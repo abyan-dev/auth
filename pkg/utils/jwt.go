@@ -38,7 +38,7 @@ func CreateJWT(email string, name string, role string, expirationMinutes int) (s
 }
 
 func CreateAuthTokenPair(c *fiber.Ctx, email string, name string, role string) (AuthTokenPair, error) {
-	accessToken, err := CreateJWT(email, name, role, 0) // 5 minutes
+	accessToken, err := CreateJWT(email, name, role, 5) // 5 minutes
 	if err != nil {
 		return AuthTokenPair{}, errors.New("failed to create access token")
 	}
@@ -63,6 +63,7 @@ func CreateSecureCookie(name string, value string, expiration time.Duration) *fi
 		Expires:  time.Now().Add(expiration),
 		HTTPOnly: true,
 		SameSite: "Strict",
+		Secure:   false,
 	}
 }
 

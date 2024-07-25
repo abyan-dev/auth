@@ -25,13 +25,19 @@ func jwtErrorHandler(c *fiber.Ctx, err error) error {
 
 func checkForRevocation(c *fiber.Ctx) error {
 	token := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
+	if token == "" {
+		return response.Unauthorized(c, "Missing or malformed token")
+	}
+
 	db := c.Locals("db").(*gorm.DB)
 
 	var revokedToken model.RevokedToken
-	if err := db.Where("token = ?", token).First(&revokedToken).Error; err != nil {
+	err := db.Where("token = ?", token).First(&revokedToken).Error
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Next()
 		}
+
 		return response.InternalServerError(c, "Database error")
 	}
 
