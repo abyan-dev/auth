@@ -74,5 +74,6 @@ func InvalidateCookie(name string) *fiber.Cookie {
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
 		SameSite: "Strict",
+		Secure:   false,
 	}
 }

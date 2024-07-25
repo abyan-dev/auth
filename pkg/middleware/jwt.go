@@ -12,10 +12,10 @@ import (
 
 func RequireAuthenticated() fiber.Handler {
 	return jwtware.New(jwtware.Config{
-		SigningKey:     jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
-		ErrorHandler:   jwtErrorHandler,
-		SuccessHandler: checkForRevocation,
-		TokenLookup:    "cookie:access_token",
+		SigningKey:   jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
+		ErrorHandler: jwtErrorHandler,
+		// SuccessHandler: checkForRevocation,
+		TokenLookup: "cookie:access_token",
 	})
 }
 
