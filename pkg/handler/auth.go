@@ -307,3 +307,7 @@ func Logout(c *fiber.Ctx) error {
 	c.Cookie(expiredRefreshCookie)
 	return response.Ok(c, "Successfully logged user out.")
 }
+
+func OTPEmail(c *fiber.Ctx) error {
+	return response.Ok(c, "")
+}

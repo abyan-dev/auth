@@ -78,6 +78,7 @@ func (s *Server) initRouter(app fiber.Router) {
 	api.Post("/auth/login", handler.Login)
 	api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
 	api.Get("/auth/decode", middleware.RequireAuthenticated(), handler.Decode)
+	api.Post("/auth/2fa/email", handler.OTPEmail)
 }
 
 func (s *Server) Run(app *fiber.App) {
