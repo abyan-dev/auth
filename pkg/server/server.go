@@ -72,11 +72,13 @@ func (s *Server) initRouter(app fiber.Router) {
 
 	api.Get("/health", handler.Health)
 	api.Get("/health/protected", middleware.RequireAuthenticated(), handler.HealthProtected)
+
 	api.Post("/auth/register", handler.Register)
-	api.Post("/auth/verify", middleware.RequireAuthenticated(), handler.Verify)
+	api.Post("/auth/verify", handler.Verify)
 	api.Post("/auth/login", handler.Login)
 	api.Post("/auth/logout", middleware.RequireAuthenticated(), handler.Logout)
-	api.Post("/auth/refresh", middleware.RequireAuthenticated(), handler.Refresh)
+	api.Get("/auth/decode", middleware.RequireAuthenticated(), handler.Decode)
+	api.Post("/auth/2fa/email", handler.OTPEmail)
 }
 
 func (s *Server) Run(app *fiber.App) {

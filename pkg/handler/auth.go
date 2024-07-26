@@ -48,6 +48,12 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type DecodeResponse struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
 func Register(c *fiber.Ctx) error {
 	config, err := utils.LoadMailEnv()
 	if err != nil {
@@ -117,7 +123,7 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to load email template.")
 	}
 
-	token, err := utils.CreateJWT(requestPayload.Email, "new user", "user", 10)
+	token, err := utils.CreateJWT(requestPayload.Email, "new user", "user", 30)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create JWT.")
 	}
@@ -158,19 +164,22 @@ func Register(c *fiber.Ctx) error {
 		return response.InternalServerError(c, "Failed to send confirmation email to user.")
 	}
 
-	u := UserResponse{
-		Name:      user.Name,
-		Email:     requestPayload.Email,
-		Role:      "user",
-		Verified:  false,
-		CreatedAt: time.Now(),
-	}
-
-	return response.Ok(c, "Successfully sent a verification email to user.", u)
+	return response.Ok(c, "Successfully sent a verification email to user.")
 }
 
 func Verify(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
+	tokenStr := c.Query("token")
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return response.Unauthorized(c, "Invalid refresh token.")
+	}
+
 	claims := token.Claims.(jwt.MapClaims)
 	email := claims["email"].(string)
 
@@ -201,12 +210,7 @@ func Verify(c *fiber.Ctx) error {
 	c.Cookie(accessCookie)
 	c.Cookie(refreshCookie)
 
-	data := AuthResponse{
-		AccessToken:  authTokenPair.AccessToken,
-		RefreshToken: authTokenPair.RefreshToken,
-	}
-
-	return response.Ok(c, "Successfully verified and registered user.", data)
+	return response.Ok(c, "Successfully verified and registered user.")
 }
 
 func Login(c *fiber.Ctx) error {
@@ -256,31 +260,10 @@ func Login(c *fiber.Ctx) error {
 	return response.Ok(c, "Successfully logged user in.", data)
 }
 
-func Refresh(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return response.Unauthorized(c, "Refresh token is required.")
-	}
-
-	refreshToken := strings.TrimPrefix(authHeader, "Bearer ")
-	if refreshToken == authHeader {
-		return response.Unauthorized(c, "Invalid Authorization header format.")
-	}
-
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
-
-	if err != nil || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token.")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
+func Decode(c *fiber.Ctx) error {
+	claims, ok := c.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return response.Unauthorized(c, "Invalid user claims")
 	}
 
 	email, emailOk := claims["email"].(string)
@@ -288,22 +271,16 @@ func Refresh(c *fiber.Ctx) error {
 	role, roleOk := claims["role"].(string)
 
 	if !emailOk || !nameOk || !roleOk {
-		return response.Unauthorized(c, "Invalid refresh token claims.")
+		return response.Unauthorized(c, "Invalid user claims")
 	}
 
-	accessToken, err := utils.CreateJWT(email, name, role, 5)
-	if err != nil {
-		return response.InternalServerError(c, "Something went wrong.")
+	data := DecodeResponse{
+		Name:  name,
+		Email: email,
+		Role:  role,
 	}
 
-	accessCookie := utils.CreateSecureCookie("access_token", accessToken, 7*24*time.Hour)
-	c.Cookie(accessCookie)
-
-	data := RefreshResponse{
-		AccessToken: accessToken,
-	}
-
-	return response.Ok(c, "Successfully refreshed access token.", data)
+	return response.Ok(c, "Successfully extracted user information", data)
 }
 
 func Logout(c *fiber.Ctx) error {
@@ -329,4 +306,8 @@ func Logout(c *fiber.Ctx) error {
 	c.Cookie(expiredAccessCookie)
 	c.Cookie(expiredRefreshCookie)
 	return response.Ok(c, "Successfully logged user out.")
+}
+
+func OTPEmail(c *fiber.Ctx) error {
+	return response.Ok(c, "")
 }
