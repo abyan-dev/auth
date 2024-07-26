@@ -17,7 +17,7 @@ The service currently provides the following features:
 - Credentials-based registration, login, and logout
 - Account verification through email
 - Forgot password / password reset mechanism
-- Two-factor authentication using email-based OTP
+- Two-factor authentication by emailing shortlived JWT
 
 ## Quickstart
 
@@ -91,10 +91,8 @@ This endpoint simply decodes the access token and returns the claims to be used 
 
 ### `POST` /api/auth/2fa/email/request
 
-This endpoint assigns a randomly generated 6-digit OTP to the user in the database and sends it to their email address.
-
-A thread/goroutine will be spawned to reset the user OTP in the database 10 minutes after it was set.
+This endpoint sends a verification URL to the user's email address, embedded with a JWT that expires in 10 minutes.
 
 ### `POST` /api/auth/2fa/email/verify
 
-This endpoint expects an `?otp=<otp>` query parameter, and it matches the given OTP with the one associated with the user in the database. If it matches, then access and refresh tokens will be issued as `Httponly`, `Secure`, and `Strictly Samesite` cookies.
+This endpoint expects a `?token=<token>` query parameter. If the token is valid, then access and refresh tokens will be issued as `Httponly`, `Secure`, and `Strictly Samesite` cookies.
